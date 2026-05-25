@@ -54,6 +54,18 @@ The workflow runs on a **self-hosted GitHub Actions runner** because Proxmox/pri
 - Ports that disappeared since the previous baseline.
 - Nessus vulnerability summary findings when Nessus API settings are configured.
 
+### Fast runner setup when Proxmox paste is painful
+
+If you cannot easily copy/paste into the Proxmox web console, SSH into the Ubuntu VM from another machine and run a single curl pipeline. Get the registration token from **GitHub repo → Settings → Actions → Runners → New self-hosted runner**, then:
+
+```bash
+ssh gideon@<ubuntu-vm-ip>
+curl -fsSL https://raw.githubusercontent.com/gideon930-linux/homelab-cyber-range/main/scripts/setup_github_runner_ubuntu.sh -o setup_runner.sh
+bash setup_runner.sh <RUNNER_TOKEN>
+```
+
+The script installs dependencies, downloads the latest runner, configures it for this repo, and starts it as a systemd service.
+
 ### Setup
 
 1. Install a self-hosted GitHub Actions runner on a VM that can reach your homelab network.
