@@ -2,11 +2,19 @@
 # Add one expected VM IP, hostname, or CIDR per line.
 # Blank lines and lines beginning with # are ignored.
 #
-# Examples:
-# 192.168.1.20
-# 192.168.1.21
-# ubuntu-server.local
+# Inline comments after an IP are NOT supported — put labels on the
+# preceding comment line, as shown below.
 #
 # If you add a CIDR here, the host is treated as an expected scan range.
 # For unrecognized-host detection, set DISCOVERY_CIDRS in the workflow.
 
+# Proxmox VM inventory
+# ----------------------------------------------------------------
+# Kali (attacker / pentest workstation)
+192.168.3.149
+
+# Ubuntu Server
+192.168.3.60
+
+# Windows 11 (current primary target)
+192.168.3.174
