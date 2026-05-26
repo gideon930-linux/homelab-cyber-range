@@ -37,6 +37,12 @@ This repository includes an automated weekday vulnerability scanner for the home
 
 The workflow runs on a **self-hosted GitHub Actions runner** because Proxmox/private homelab networks (e.g. `192.168.x.x`) are not reachable from GitHub-hosted runners.
 
+### Lab roles
+
+- **Kali Linux (`192.168.3.149`)** — attacker / scanner host. This VM runs the self-hosted GitHub Actions runner and executes Nmap (and Nessus API calls) against the targets. It is intentionally **not** listed in `target.txt`.
+- **Ubuntu Server (`192.168.3.60`)** — scan target.
+- **Windows 11 (`192.168.3.174`)** — scan target (current primary target).
+
 ### Files
 
 - `target.txt` — expected VM inventory. Add your current VM IPs or hostnames here.
@@ -56,19 +62,19 @@ The workflow runs on a **self-hosted GitHub Actions runner** because Proxmox/pri
 
 ### Fast runner setup when Proxmox paste is painful
 
-If you cannot easily copy/paste into the Proxmox web console, SSH into the Ubuntu VM from another machine and run a single curl pipeline. Get the registration token from **GitHub repo → Settings → Actions → Runners → New self-hosted runner**, then:
+The self-hosted runner lives on the **Kali attacker VM (`192.168.3.149`)** so it can reach the scan targets on the lab network. If you cannot easily copy/paste into the Proxmox web console, SSH into the Kali VM from another machine and run a single curl pipeline. Get the registration token from **GitHub repo → Settings → Actions → Runners → New self-hosted runner**, then:
 
 ```bash
-ssh gideon@<ubuntu-vm-ip>
+ssh <user>@192.168.3.149
 curl -fsSL https://raw.githubusercontent.com/gideon930-linux/homelab-cyber-range/main/scripts/setup_github_runner_ubuntu.sh -o setup_runner.sh
 bash setup_runner.sh <RUNNER_TOKEN>
 ```
 
-The script installs dependencies, downloads the latest runner, configures it for this repo, and starts it as a systemd service.
+The script is apt-based and works on Kali (Debian-based) as well as Ubuntu. It installs dependencies, downloads the latest runner, configures it for this repo, and starts it as a systemd service.
 
 ### Setup
 
-1. Install a self-hosted GitHub Actions runner on a VM that can reach your homelab network.
+1. Install a self-hosted GitHub Actions runner on the **Kali attacker VM (`192.168.3.149`)** so it can reach the homelab scan targets. The Kali VM is the scanner/attacker host — do **not** run the runner on the Ubuntu Server or Windows 11 VMs, since those are scan targets.
 2. Install scanner dependencies on the runner:
 
    ```bash

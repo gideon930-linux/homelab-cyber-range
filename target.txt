@@ -10,9 +10,10 @@
 
 # Proxmox VM inventory
 # ----------------------------------------------------------------
-# Kali (attacker / pentest workstation)
-192.168.3.149
-
+# Kali at 192.168.3.149 is the attacker/scanner host (self-hosted
+# GitHub Actions runner). It is intentionally NOT listed as a scan
+# target.
+#
 # Ubuntu Server
 192.168.3.60
 
