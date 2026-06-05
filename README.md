@@ -31,11 +31,32 @@ I use this environment to practice ethical hacking and blue-team defense:
 
 All testing is performed only on systems I own or have explicit permission to test.
 
-## Homelab Vulnerability Scanner
+## Vulnerability Scanning with OpenVAS
 
-This repository includes an automated weekday vulnerability scanner for the homelab VMs running on Proxmox. It reads expected VM targets from `target.txt`, runs Nmap against them, optionally launches an existing Nessus scan through the Nessus API, and posts a structured report to a GitHub issue.
+I run regular vulnerability scans against my homelab using Greenbone Community Edition (OpenVAS) on a dedicated VM.
 
-The workflow runs on a **self-hosted GitHub Actions runner** because Proxmox/private homelab networks (e.g. `192.168.x.x`) are not reachable from GitHub-hosted runners.
+### Scanner setup
+
+- **Scanner VM:** `openvas-scanner` running Ubuntu Server on Proxmox
+- **Targets:** Windows 11 workstation, Ubuntu server(s), and other lab services
+- **Network:** Scanner is on the isolated lab VLAN, segmented by OPNsense
+
+### Scan schedule
+
+- **Frequency:** Weekly full scan of the lab subnet
+- **Ad-hoc scans:** After major OS/application updates or lab changes
+
+### What I track
+
+- High/critical vulnerabilities found on each host
+- Configuration issues (e.g., weak protocols, missing patches)
+- Progress over time as I patch and harden systems
+
+### Documentation
+
+Scan summaries and remediation notes live in:
+
+- `vuln-scans/` – Markdown files describing each scan, key findings, and what I fixed
 
 ### Lab roles
 
