@@ -1,7 +1,7 @@
 {
   "closed_ports": [],
-  "generated_at_utc": "2026-06-08T20:05:44Z",
-  "github_run_id": "27145697797",
+  "generated_at_utc": "2026-06-18T22:40:50Z",
+  "github_run_id": "27765276611",
   "host_count": 0,
   "nessus_findings": [],
   "new_hosts": [],
@@ -9,6 +9,8 @@
   "repository": "gideon930-linux/homelab-cyber-range",
   "unrecognized_hosts": [
     "192.168.3.1",
-    "192.168.3.149"
+    "192.168.3.149",
+    "192.168.3.189",
+    "192.168.3.53"
   ]
 }
