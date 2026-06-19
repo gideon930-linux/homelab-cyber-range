@@ -20,7 +20,8 @@ This repository documents my personal cybersecurity lab built on Proxmox, OPNsen
 - Network diagrams of the lab
 - Notes and configurations (with secrets removed)
 - Lab writeups explaining what I tested and what I learned
-- ## Pentesting in the lab
+  
+## Pentesting in the Lab
 
 I use this environment to practice ethical hacking and blue-team defense:
 
@@ -30,6 +31,25 @@ I use this environment to practice ethical hacking and blue-team defense:
 - Tools such as Nmap, Metasploit, Burp Suite, and Wireshark
 
 All testing is performed only on systems I own or have explicit permission to test.
+
+### Reconnaissance and Enumeration Labs
+
+These notes document introductory reconnaissance work performed against services exposed through the lab firewall for learning and documentation purposes.
+
+- **Nmap port scanning notes:** [`docs/nmap-port-scanning.md`](docs/nmap-port-scanning.md)
+- **dig DNS enumeration notes:** [`docs/dig-dns-enumeration.md`](docs/dig-dns-enumeration.md)
+
+### External access through OPNsense
+
+To simulate a more realistic attack path from my main PC, I configured OPNsense WAN rules and Destination NAT to expose selected lab services safely to the lab edge.
+
+Current externally reachable lab services:
+
+- `http://192.168.2.127:3000` — OWASP Juice Shop
+- `http://192.168.2.127:8081` — DVWA
+- `http://192.168.2.127:8082/WebGoat` — OWASP WebGoat
+
+These exposures are temporary and used only for controlled lab testing and documentation.
 
 ## Vulnerability Scanning with OpenVAS
 
