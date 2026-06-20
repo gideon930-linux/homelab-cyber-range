@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_NAME="$(basename "$0")"
 WORKSPACE_ROOT="${WORKSPACE_ROOT:-$(pwd)}"
 TARGET_FILE="${TARGET_FILE:-target.txt}"
+WEB_TARGET_FILE="${WEB_TARGET_FILE:-web-targets.txt}"
 BASELINE_FILE="${BASELINE_FILE:-scan-state/baseline.json}"
 REPORT_DIR="${REPORT_DIR:-reports}"
 DISCOVERY_CIDRS="${DISCOVERY_CIDRS:-}"
@@ -27,6 +28,8 @@ nmap_xml="$REPORT_DIR/nmap-$stamp.xml"
 nmap_json="$REPORT_DIR/nmap-$stamp.json"
 nessus_json="$REPORT_DIR/nessus-$stamp.json"
 finding_json="$REPORT_DIR/findings-$stamp.json"
+web_json="$REPORT_DIR/web-$stamp.json"
+web_output_dir="$REPORT_DIR/web-$stamp"
 report_md="$REPORT_DIR/vulnerability-report-$stamp.md"
 latest_report="$REPORT_DIR/latest-vulnerability-report.md"
 latest_findings="$REPORT_DIR/latest-findings.json"
@@ -215,8 +218,146 @@ else
   printf '{"skipped": true, "reason": "Nessus API configuration not complete"}\n' > "$nessus_json"
 fi
 
+# --- Lightweight web application checks -------------------------------------
+# Runs only when WEB_TARGET_FILE exists. Optional tools (whatweb, nikto, nmap
+# HTTP scripts) are used when installed and skipped with a warning otherwise.
+# This block must never fail the overall workflow: every external command is
+# guarded with `|| true`, and missing tools are logged and skipped.
+web_results=()
+if [[ -f "$WEB_TARGET_FILE" ]]; then
+  mkdir -p "$web_output_dir"
+  have_whatweb=false; command -v whatweb >/dev/null 2>&1 && have_whatweb=true
+  have_nikto=false;   command -v nikto   >/dev/null 2>&1 && have_nikto=true
+  have_nmap=false;    command -v nmap    >/dev/null 2>&1 && have_nmap=true
+
+  if [[ "$have_whatweb" == false && "$have_nikto" == false && "$have_nmap" == false ]]; then
+    log "WARNING: No web scanning tools (whatweb/nikto/nmap) found. Skipping web checks."
+  else
+    log "Running lightweight web checks (whatweb=$have_whatweb nikto=$have_nikto nmap=$have_nmap)"
+  fi
+
+  web_index=0
+  while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
+    line="${raw_line%%$'\r'}"
+    # Strip leading/trailing whitespace.
+    line="$(printf '%s' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ "$line" != *=* ]] && continue
+
+    label="$(printf '%s' "${line%%=*}" | sed 's/[[:space:]]*$//')"
+    url="$(printf '%s' "${line#*=}" | sed 's/^[[:space:]]*//')"
+    [[ -z "$url" ]] && continue
+
+    web_index=$((web_index + 1))
+    safe_label="$(printf '%s' "$label" | tr -c 'A-Za-z0-9._-' '_' | sed 's/_\{2,\}/_/g')"
+    [[ -z "$safe_label" ]] && safe_label="target"
+    slug="${web_index}-${safe_label}"
+
+    # Parse host and port from the URL for nmap HTTP scripts.
+    scheme="${url%%://*}"
+    rest="${url#*://}"
+    hostport="${rest%%/*}"
+    web_host="${hostport%%:*}"
+    if [[ "$hostport" == *:* ]]; then
+      web_port="${hostport##*:}"
+    elif [[ "$scheme" == "https" ]]; then
+      web_port=443
+    else
+      web_port=80
+    fi
+
+    status="no-tool"
+    tool_used="none"
+    artifact_ref="none"
+
+    # 1) HTTP reachability via curl (already a required command).
+    http_code="$(curl -skS -o /dev/null -w '%{http_code}' --max-time 15 "$url" 2>/dev/null || true)"
+    [[ -z "$http_code" ]] && http_code="000"
+
+    artifacts=()
+
+    if [[ "$have_whatweb" == true ]]; then
+      ww_out="$web_output_dir/${slug}.whatweb.txt"
+      if whatweb --no-errors -a 1 --color=never "$url" >"$ww_out" 2>&1; then
+        status="completed"
+      else
+        status="completed-with-warnings"
+      fi
+      tool_used="whatweb"
+      artifacts+=("$ww_out")
+    fi
+
+    if [[ "$have_nikto" == true ]]; then
+      nk_out="$web_output_dir/${slug}.nikto.txt"
+      # -nointeractive keeps nikto non-blocking; default plugins only (safe).
+      nikto -h "$url" -nointeractive -maxtime 120s -output "$nk_out" -Format txt >/dev/null 2>&1 || true
+      [[ -s "$nk_out" ]] || printf 'nikto produced no output for %s\n' "$url" >"$nk_out"
+      tool_used="${tool_used}+nikto"; tool_used="${tool_used#none+}"
+      status="completed"
+      artifacts+=("$nk_out")
+    fi
+
+    if [[ "$have_nmap" == true ]]; then
+      nm_out="$web_output_dir/${slug}.nmap-http.txt"
+      # Safe, default HTTP NSE scripts only — no brute/dos/exploit categories.
+      nmap -Pn -p "$web_port" \
+        --script "http-title,http-headers,http-server-header,http-methods" \
+        "$web_host" -oN "$nm_out" >/dev/null 2>&1 || true
+      [[ -s "$nm_out" ]] || printf 'nmap http scripts produced no output for %s:%s\n' "$web_host" "$web_port" >"$nm_out"
+      tool_used="${tool_used}+nmap-http"; tool_used="${tool_used#none+}"
+      [[ "$status" == "no-tool" ]] && status="completed"
+      artifacts+=("$nm_out")
+    fi
+
+    if [[ "${#artifacts[@]}" -gt 0 ]]; then
+      artifact_ref="$(IFS=';'; printf '%s' "${artifacts[*]}")"
+    fi
+
+    web_results+=("$(printf '%s\t%s\t%s\t%s\t%s\t%s' \
+      "$label" "$url" "$tool_used" "$status" "$http_code" "$artifact_ref")")
+  done < "$WEB_TARGET_FILE"
+
+  # Emit a JSON summary of web results for the report generator.
+  : > "$web_json.tmp"
+  for entry in "${web_results[@]:-}"; do
+    [[ -z "$entry" ]] && continue
+    printf '%s\n' "$entry" >> "$web_json.tmp"
+  done
+  python3 - "$web_json.tmp" "$web_json" "$WEB_TARGET_FILE" <<'PY'
+import json, sys
+from pathlib import Path
+tsv_path, out_path, web_target_file = sys.argv[1:]
+results = []
+p = Path(tsv_path)
+if p.exists():
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        while len(parts) < 6:
+            parts.append("")
+        results.append({
+            "label": parts[0],
+            "url": parts[1],
+            "tool": parts[2],
+            "status": parts[3],
+            "http_code": parts[4],
+            "artifact": parts[5],
+        })
+Path(out_path).write_text(
+    json.dumps({"enabled": True, "target_file": web_target_file, "results": results},
+               indent=2, sort_keys=True) + "\n",
+    encoding="utf-8",
+)
+PY
+  rm -f "$web_json.tmp"
+else
+  log "Web target file not found ($WEB_TARGET_FILE); skipping web application checks."
+  printf '{"enabled": false, "results": []}\n' > "$web_json"
+fi
+
 log "Creating diffed findings and Markdown report"
-python3 - "$nmap_json" "$nessus_json" "$BASELINE_FILE" "$discovered_json" "$TARGET_FILE" "$finding_json" "$report_md" "$timestamp_utc" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" <<'PY'
+python3 - "$nmap_json" "$nessus_json" "$BASELINE_FILE" "$discovered_json" "$TARGET_FILE" "$finding_json" "$report_md" "$timestamp_utc" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$web_json" <<'PY'
 import ipaddress
 import json
 import sys
@@ -233,6 +374,7 @@ from pathlib import Path
     timestamp_utc,
     github_repository,
     github_run_id,
+    web_json,
 ) = sys.argv[1:]
 
 def load_json(path, default):
@@ -272,6 +414,8 @@ nmap_data = load_json(nmap_json, {"hosts": {}})
 baseline = load_json(baseline_file, {"hosts": {}})
 nessus = load_json(nessus_json, {"skipped": True})
 discovered = load_json(discovered_json, [])
+web_data = load_json(web_json, {"enabled": False, "results": []})
+web_results = web_data.get("results", []) if isinstance(web_data, dict) else []
 targets = target_entries(target_file)
 
 current_hosts = nmap_data.get("hosts", {})
@@ -329,6 +473,8 @@ summary = {
     "closed_ports": closed_ports,
     "nessus_findings": nessus_findings,
     "host_count": len(current_hosts),
+    "web_targets": web_results,
+    "web_enabled": bool(web_data.get("enabled")) if isinstance(web_data, dict) else False,
 }
 
 with Path(finding_json).open("w", encoding="utf-8") as f:
@@ -348,6 +494,7 @@ lines.append(f"- **Net-new expected hosts:** {len(new_hosts)}")
 lines.append(f"- **Unrecognized discovered hosts:** {len(unrecognized_hosts)}")
 lines.append(f"- **Net-new open ports:** {len(new_ports)}")
 lines.append(f"- **Nessus findings:** {len(nessus_findings) if not nessus.get('skipped') else 'Skipped'}")
+lines.append(f"- **Web targets checked:** {len(web_results) if web_data.get('enabled') else 'Skipped'}")
 lines.append("")
 
 lines.append("## Executive Summary")
@@ -437,6 +584,26 @@ if current_hosts:
         lines.append(f"| {md_escape(host)} | {md_escape(hostnames)} | {md_escape(os_guess)} | {md_escape(ports)} |")
 else:
     lines.append("- No live expected targets detected.")
+lines.append("")
+
+lines.append("## Web Application Targets")
+lines.append("")
+if not web_data.get("enabled"):
+    lines.append("- Web application checks were skipped (no `web-targets.txt` present).")
+elif web_results:
+    lines.append("Lightweight, safe/default web checks (whatweb / nikto / nmap HTTP scripts). "
+                 "See artifact files for full output.")
+    lines.append("")
+    lines.append("| Target | URL | Tool(s) | HTTP | Status | Artifact(s) |")
+    lines.append("|---|---|---|---:|---|---|")
+    for item in web_results:
+        lines.append(
+            f"| {md_escape(item.get('label') or 'n/a')} | {md_escape(item.get('url') or '')} | "
+            f"{md_escape(item.get('tool') or 'none')} | {md_escape(item.get('http_code') or '000')} | "
+            f"{md_escape(item.get('status') or 'unknown')} | {md_escape(item.get('artifact') or 'none')} |"
+        )
+else:
+    lines.append("- Web target file was present but produced no scannable entries.")
 lines.append("")
 
 lines.append("## Remediation Checklist")

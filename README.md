@@ -88,8 +88,9 @@ Scan summaries and remediation notes live in:
 
 ### Files
 
-- `target.txt` — expected VM inventory. Add your current VM IPs or hostnames here.
-- `scripts/homelab_vuln_scan.sh` — scanner script (Nmap + optional Nessus API).
+- `target.txt` — expected **host/IP** VM inventory for Nmap scans. Add your current VM IPs, hostnames, or CIDRs here. Do **not** put web app URLs here.
+- `web-targets.txt` — **web application** inventory (labelled `LABEL = URL` lines) scanned with lightweight web tooling. See [Host targets vs web targets](#host-targets-vs-web-targets).
+- `scripts/homelab_vuln_scan.sh` — scanner script (Nmap + optional Nessus API + optional web checks).
 - `.github/workflows/homelab-vulnerability-scan.yml` — weekday GitHub Action (Mon–Fri, 11:00 UTC).
 - `scan-state/baseline.json` — saved open-port baseline used for net-new comparisons.
 - `reports/latest-vulnerability-report.md` — latest human-readable report (generated).
@@ -102,6 +103,58 @@ Scan summaries and remediation notes live in:
 - Net-new open ports since the previous baseline.
 - Ports that disappeared since the previous baseline.
 - Nessus vulnerability summary findings when Nessus API settings are configured.
+
+### Host targets vs web targets
+
+The scanner separates two kinds of targets so each gets the right tooling:
+
+- **Host targets (`target.txt`)** — IPs, hostnames, or CIDRs scanned with **Nmap** (`-sV`, optional `-O`). This drives host discovery, open-port baselining, and net-new port/host detection.
+- **Web targets (`web-targets.txt`)** — full application **URLs** scanned with lightweight, safe/default web tooling. Each line is `LABEL = URL`, for example:
+
+  ```text
+  Juice Shop = http://192.168.3.53:3000
+  WebGoat    = http://192.168.2.53:8082/WebGoat/login
+  DVWA       = http://192.168.3.53:8081/login.php
+  Proxmox    = http://192.168.2.53:8006
+  ```
+
+Keep URLs out of `target.txt` and IPs/CIDRs out of `web-targets.txt`. If `web-targets.txt` is absent (or `WEB_TARGET_FILE` points nowhere), web checks are skipped and the host scan is unaffected.
+
+#### How web checks run
+
+When `WEB_TARGET_FILE` exists, the scanner runs **optional** web tools per target and degrades gracefully when a tool is not installed — a missing tool logs a warning and the workflow continues:
+
+- **`curl`** reachability check (HTTP status code) — always available.
+- **`whatweb`** technology fingerprint — used only if installed.
+- **`nikto`** baseline web server checks (default plugins, time-limited, non-interactive) — used only if installed.
+- **`nmap` HTTP NSE scripts** (`http-title`, `http-headers`, `http-server-header`, `http-methods`) against the URL's host/port — safe/default scripts only.
+
+All scans are **safe/default**: no brute-force, authenticated attacks, or destructive NSE categories. Per-target output is written under `reports/web-<timestamp>/` and summarised in `reports/latest-vulnerability-report.md` under a **Web Application Targets** section (target URL, tool used, HTTP status, and artifact paths). A machine-readable summary is written to `reports/web-<timestamp>.json`.
+
+Optional web tools on Kali:
+
+```bash
+sudo apt update
+sudo apt install -y whatweb nikto
+```
+
+#### Proxmox management caution
+
+Proxmox is **management infrastructure**, not an intentionally vulnerable target — keep its checks read-only/default and never run destructive or authenticated attacks against it. Also note that **Proxmox normally serves HTTPS on port 8006**. The provided `http://192.168.2.53:8006` URL is kept as-is for now; **if HTTP checks fail or redirect, switch the `Proxmox` line in `web-targets.txt` to `https://192.168.2.53:8006`** (the self-signed cert is fine — `curl`/`nmap` are run with TLS verification relaxed for lab use).
+
+### Setting up NmapAutomator on Kali (manual, not yet wired in)
+
+[NmapAutomator](https://github.com/21y4d/nmapAutomator) is **not currently installed** on the Kali scanner VM, and it is intentionally **not** wired into the scheduled workflow. If you want it for ad-hoc, interactive enumeration, install it manually on Kali:
+
+```bash
+sudo git clone https://github.com/21y4d/nmapAutomator.git /opt/nmapAutomator
+sudo ln -sf /opt/nmapAutomator/nmapAutomator.sh /usr/local/bin/nmapAutomator
+nmapAutomator --help
+# Example ad-hoc run against a single host:
+nmapAutomator -H 192.168.3.60 -t Port
+```
+
+Run it manually only against hosts you own. It is left out of the scheduled job so the automated scan stays lightweight and non-breaking; revisit wiring it in later only as an optional, non-fatal step.
 
 ### Fast runner setup when Proxmox paste is painful
 
@@ -123,9 +176,11 @@ The script is apt-based and works on Kali (Debian-based) as well as Ubuntu. It i
    ```bash
    sudo apt update
    sudo apt install -y nmap jq curl python3
+   # Optional web-check tooling (web checks degrade gracefully if absent):
+   sudo apt install -y whatweb nikto
    ```
 
-3. Edit `target.txt` and list your existing VM IPs or hostnames (one per line).
+3. Edit `target.txt` and list your existing VM IPs or hostnames (one per line). Edit `web-targets.txt` and list any web application URLs as `LABEL = URL`.
 4. In GitHub repository **Settings → Variables**, add:
 
    - `DISCOVERY_CIDRS` — optional, e.g. `192.168.1.0/24`, used to detect unrecognized hosts on the LAN.
