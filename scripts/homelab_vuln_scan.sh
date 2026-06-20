@@ -9,6 +9,8 @@ REPORT_DIR="${REPORT_DIR:-reports}"
 DISCOVERY_CIDRS="${DISCOVERY_CIDRS:-}"
 NMAP_TIMING="${NMAP_TIMING:-T3}"
 NMAP_EXTRA_ARGS="${NMAP_EXTRA_ARGS:-}"
+ENABLE_OS_DETECTION="${ENABLE_OS_DETECTION:-auto}"
+NMAP_USE_SUDO="${NMAP_USE_SUDO:-false}"
 RUN_NESSUS="${RUN_NESSUS:-true}"
 NESSUS_URL="${NESSUS_URL:-}"
 NESSUS_SCAN_ID="${NESSUS_SCAN_ID:-}"
@@ -61,8 +63,45 @@ if [[ "${#expected_targets[@]}" -eq 0 ]]; then
   exit 2
 fi
 
-log "Running Nmap scan against ${#expected_targets[@]} expected target entries"
-nmap -"$NMAP_TIMING" -sV -O --open -oX "$nmap_xml" $NMAP_EXTRA_ARGS "${expected_targets[@]}"
+# OS detection (-O) requires raw-packet privileges (effectively root). On a
+# non-root self-hosted runner nmap aborts with "TCP/IP fingerprinting requires
+# root privileges. QUITTING!", which fails the whole scheduled scan. Decide
+# whether OS detection can run, and how, without ever blocking on interactive
+# sudo.
+nmap_prefix=()
+os_detection_args=()
+os_detection_note="disabled"
+
+want_os_detection=false
+case "${ENABLE_OS_DETECTION,,}" in
+  false|no|off|0)
+    want_os_detection=false
+    ;;
+  *)
+    want_os_detection=true
+    ;;
+esac
+
+if [[ "$want_os_detection" == "true" ]]; then
+  if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    os_detection_args=(-O)
+    os_detection_note="enabled (running as root)"
+  elif [[ "${NMAP_USE_SUDO,,}" =~ ^(true|yes|on|1)$ ]] && command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+    nmap_prefix=(sudo -n)
+    os_detection_args=(-O)
+    os_detection_note="enabled (via passwordless sudo)"
+  else
+    log "WARNING: OS detection (-O) requires root privileges. Continuing service/version scan WITHOUT -O."
+    log "WARNING: To enable OS guesses, run the scanner as root, or configure passwordless sudo and set NMAP_USE_SUDO=true."
+    os_detection_note="skipped (no root privileges; OS guesses will be empty)"
+  fi
+else
+  os_detection_note="skipped (ENABLE_OS_DETECTION=$ENABLE_OS_DETECTION)"
+fi
+
+log "Running Nmap scan against ${#expected_targets[@]} expected target entries (OS detection: $os_detection_note)"
+# shellcheck disable=SC2086
+"${nmap_prefix[@]}" nmap -"$NMAP_TIMING" -sV "${os_detection_args[@]}" --open -oX "$nmap_xml" $NMAP_EXTRA_ARGS "${expected_targets[@]}"
 
 log "Parsing Nmap XML"
 python3 - "$nmap_xml" "$nmap_json" <<'PY'

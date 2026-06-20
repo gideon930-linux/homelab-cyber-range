@@ -146,6 +146,50 @@ The workflow runs every weekday at `11:00 UTC` (7:00 AM America/New_York during 
 
 You can also trigger the workflow manually from the Actions tab. Manual inputs let you temporarily override `DISCOVERY_CIDRS` and choose whether to run Nessus.
 
+### OS detection and root privileges
+
+Nmap OS detection (`-O`) sends raw packets and therefore requires root privileges. The self-hosted runner on the Kali VM runs as a normal (non-root) user, so forcing `-O` makes Nmap abort with:
+
+```
+TCP/IP fingerprinting requires root privileges.
+QUITTING!
+```
+
+To keep scheduled scans reliable, the scanner now decides at runtime whether OS detection can run:
+
+- **Service/version detection (`-sV`) always runs** — this never needs root.
+- **OS detection (`-O`) is added only when privileges allow it:**
+  - the scanner is running as root, **or**
+  - `NMAP_USE_SUDO=true` is set **and** passwordless sudo is available (`sudo -n` succeeds).
+- Otherwise the scanner logs a warning and continues **without** `-O`. The scan still succeeds; the **OS Guess** column in the report is simply empty (`n/a`) for that run.
+
+This behavior is controlled by two optional environment variables:
+
+| Variable | Default | Effect |
+|---|---|---|
+| `ENABLE_OS_DETECTION` | `auto` | `auto`/`true` attempts OS detection when privileges allow; `false` disables it entirely. |
+| `NMAP_USE_SUDO` | `false` | When `true`, allows the scanner to prefix Nmap with `sudo -n` for OS detection (only if passwordless sudo works). |
+
+The scanner never prompts for an interactive sudo password, so a missing or password-protected sudo just falls back to a scan without OS guesses instead of hanging or failing.
+
+#### Optionally enabling OS detection with passwordless sudo
+
+If you want OS guesses back in the report, grant the runner user passwordless sudo for `nmap` on the Kali VM:
+
+```bash
+# As root / via the Proxmox console:
+echo "<runner-user> ALL=(root) NOPASSWD: /usr/bin/nmap" | sudo tee /etc/sudoers.d/nmap-scan
+sudo chmod 0440 /etc/sudoers.d/nmap-scan
+sudo visudo -cf /etc/sudoers.d/nmap-scan   # validate syntax
+```
+
+Then set the workflow/job env var `NMAP_USE_SUDO=true` (for example via GitHub repository **Settings → Variables** and wiring it into the workflow `env:` block, or by exporting it before running the script locally). With passwordless sudo in place and `NMAP_USE_SUDO=true`, scheduled scans will run `sudo -n nmap ... -O ...` and repopulate the OS Guess column.
+
+### Troubleshooting
+
+- **`TCP/IP fingerprinting requires root privileges. QUITTING!`** — The runner is non-root and OS detection was forced. The scanner now skips `-O` automatically in this case and continues; if you still see this, ensure you are on the current version of `scripts/homelab_vuln_scan.sh`. To restore OS guesses, follow the passwordless-sudo steps above.
+- **OS Guess column shows `n/a`** — Expected when OS detection is skipped (no root / sudo). Service and port data are unaffected.
+
 ### Notes
 
 - Only scan networks and systems you own or have permission to test.
