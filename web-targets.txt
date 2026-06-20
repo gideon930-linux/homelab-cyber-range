@@ -1,0 +1,28 @@
+# Homelab web application scan targets
+# ----------------------------------------------------------------
+# These are HTTP/HTTPS application targets scanned with lightweight
+# web tooling (whatweb / nikto / nmap HTTP scripts), NOT the host/IP
+# Nmap inventory. Keep host and CIDR scan targets in target.txt.
+#
+# Format: LABEL = URL  (one per line)
+#   - Lines beginning with # and blank lines are ignored.
+#   - The label is free text up to the first '='. The remainder is the URL.
+#   - Scans are safe/default only. No destructive or auth brute-force checks.
+#
+# Kali at 192.168.3.149 is the attacker/scanner host and is never a target.
+
+# OWASP Juice Shop (intentionally vulnerable web app)
+Juice Shop = http://192.168.3.53:3000
+
+# OWASP WebGoat (intentionally vulnerable training app)
+WebGoat = http://192.168.2.53:8082/WebGoat/login
+
+# DVWA (Damn Vulnerable Web Application)
+DVWA = http://192.168.3.53:8081/login.php
+
+# Proxmox management UI
+# NOTE: Proxmox normally serves HTTPS on port 8006. The HTTP URL below is
+# kept as provided. If HTTP checks fail/redirect, use the HTTPS form:
+#   https://192.168.2.53:8006
+# Treat Proxmox as management infrastructure — keep scans read-only/default.
+Proxmox = http://192.168.2.53:8006
