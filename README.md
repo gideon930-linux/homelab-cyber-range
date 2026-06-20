@@ -91,18 +91,22 @@ Scan summaries and remediation notes live in:
 - `target.txt` — expected **host/IP** VM inventory for Nmap scans. Add your current VM IPs, hostnames, or CIDRs here. Do **not** put web app URLs here.
 - `web-targets.txt` — **web application** inventory (labelled `LABEL = URL` lines) scanned with lightweight web tooling. See [Host targets vs web targets](#host-targets-vs-web-targets).
 - `scripts/homelab_vuln_scan.sh` — scanner script (Nmap + optional Nessus API + optional web checks).
-- `.github/workflows/homelab-vulnerability-scan.yml` — weekday GitHub Action (Mon–Fri, 11:00 UTC).
+- `.github/workflows/homelab-vulnerability-scan.yml` — weekday GitHub Action (Mon–Fri, 6:00 AM Eastern / 10:00 UTC during EDT).
 - `scan-state/baseline.json` — saved open-port baseline used for net-new comparisons.
-- `reports/latest-vulnerability-report.md` — latest human-readable report (generated).
+- `reports/latest-vulnerability-report.md` — latest full human-readable report (generated).
 - `reports/latest-findings.json` — latest machine-readable findings (generated).
+- `reports/latest-wiki-changes.md` — latest concise, **changes-only** report pushed to the wiki (generated).
 
 ### What it tracks
 
 - Expected hosts that appear for the first time compared with the saved baseline.
 - Unrecognized live hosts discovered in configured discovery CIDRs but not listed in `target.txt`.
+- Per-host **open port count changes** (previous vs. current), surfaced in the changes-only wiki report.
 - Net-new open ports since the previous baseline.
 - Ports that disappeared since the previous baseline.
 - Nessus vulnerability summary findings when Nessus API settings are configured.
+
+The baseline (`scan-state/baseline.json`) is updated after each successful scan and committed back to the repo, so each run compares against the previous day's results.
 
 ### Host targets vs web targets
 
@@ -193,9 +197,44 @@ The script is apt-based and works on Kali (Debian-based) as well as Ubuntu. It i
    - `NESSUS_ACCESS_KEY`
    - `NESSUS_SECRET_KEY`
 
+6. (Recommended) For changes-only wiki history, enable the repository **Wiki** feature and add a secret named `WIKI_PUSH_TOKEN` (a PAT with `repo` scope). See [Wiki push authentication](#wiki-push-authentication-wiki_push_token). If omitted, the workflow falls back to `GITHUB_TOKEN`, which may not have permission to push to the wiki.
+
 ### Schedule
 
-The workflow runs every weekday at `11:00 UTC` (7:00 AM America/New_York during DST). GitHub Actions cron schedules are UTC-only — during standard time, change the cron to `0 12 * * 1-5` to keep it at 7:00 AM Eastern.
+The workflow runs **every weekday (Mon–Fri) at 6:00 AM America/New_York**. The scheduled run scans the **entire inventory in `target.txt`** automatically — no manual target input is required.
+
+GitHub Actions cron schedules are **UTC-only and do not observe US daylight saving time**, so the UTC offset is chosen manually:
+
+- **EDT (daylight saving, ~Mar–Nov):** 6:00 AM ET = **`0 10 * * 1-5`** (10:00 UTC) — this is the active default.
+- **EST (standard time, ~Nov–Mar):** 6:00 AM ET = **`0 11 * * 1-5`** (11:00 UTC) — commented out in the workflow.
+
+Because the active EDT line is used year-round, during EST it will fire at **5:00 AM ET**. To keep it at exactly 6:00 AM ET through the winter, switch to the commented EST line in `.github/workflows/homelab-vulnerability-scan.yml` when standard time begins (and switch back in spring). `workflow_dispatch` remains enabled for manual runs at any time.
+
+### Changes-only wiki reports (historical record)
+
+After every successful scan, the workflow pushes a **concise, changes-only** report to the repository **wiki** so you get a searchable history without manually checking each run. The wiki page intentionally surfaces **only deltas**:
+
+- Per-host **open port count changes** (previous vs. current).
+- **Newly opened** ports (host, port, service, product, version).
+- **Closed** ports since the last baseline.
+- **Unauthorized / unrecognized hosts** discovered in `DISCOVERY_CIDRS` but not listed in `target.txt`.
+
+When nothing changed, the wiki page is a single "No changes detected" line rather than a full inventory dump. The full report and all raw artifacts are still retained on the workflow run (Actions → run → Artifacts) and in `reports/latest-vulnerability-report.md`.
+
+**Where to find historical reports:**
+
+- Each run publishes a dated page named **`Homelab-Changes-YYYY-MM-DD`** in the wiki.
+- An index page, **`Homelab-Scan-History`**, links to every dated report (most recent first) for quick searching.
+- Browse them under the repository's **Wiki** tab.
+
+#### Wiki push authentication (`WIKI_PUSH_TOKEN`)
+
+GitHub wiki pushes frequently **reject the default `GITHUB_TOKEN`**. The workflow handles auth robustly:
+
+1. If a repository secret named **`WIKI_PUSH_TOKEN`** is present, it is used (recommended).
+2. Otherwise it falls back to `GITHUB_TOKEN`, which may fail with a permissions error.
+
+If wiki pushes fail, create a **Personal Access Token (PAT)** with `repo` scope and add it as a repository secret named **`WIKI_PUSH_TOKEN`** (GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**). The token is passed via an HTTPS credential helper and is masked in logs (`::add-mask::`); it is never printed. The wiki must be initialized at least once (enable the Wiki feature in repo settings) — the workflow will create the first page if the wiki repo is empty.
 
 ### Manual run
 
