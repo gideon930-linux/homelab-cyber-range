@@ -1,4 +1,24 @@
 {
-  "hosts": {},
-  "last_updated_utc": "2026-06-18T22:40:50Z"
+  "hosts": {
+    "192.168.3.60": {
+      "addresses": [
+        "192.168.3.60"
+      ],
+      "hostnames": [],
+      "mac": "BC:24:11:16:E3:04",
+      "os_matches": [],
+      "ports": [
+        {
+          "extrainfo": "Ubuntu Linux; protocol 2.0",
+          "port": 22,
+          "product": "OpenSSH",
+          "protocol": "tcp",
+          "service": "ssh",
+          "version": "10.2p1 Ubuntu 2ubuntu3.2"
+        }
+      ],
+      "vendor": "Proxmox Server Solutions GmbH"
+    }
+  },
+  "last_updated_utc": "2026-06-20T01:03:39Z"
 }

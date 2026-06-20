@@ -1,11 +1,26 @@
 {
   "closed_ports": [],
-  "generated_at_utc": "2026-06-18T22:40:50Z",
-  "github_run_id": "27765276611",
-  "host_count": 0,
+  "generated_at_utc": "2026-06-20T01:03:39Z",
+  "github_run_id": "27855511178",
+  "host_count": 1,
   "nessus_findings": [],
-  "new_hosts": [],
-  "new_ports": [],
+  "new_hosts": [
+    "192.168.3.60"
+  ],
+  "new_ports": [
+    {
+      "details": {
+        "extrainfo": "Ubuntu Linux; protocol 2.0",
+        "port": 22,
+        "product": "OpenSSH",
+        "protocol": "tcp",
+        "service": "ssh",
+        "version": "10.2p1 Ubuntu 2ubuntu3.2"
+      },
+      "host": "192.168.3.60",
+      "port": "tcp/22"
+    }
+  ],
   "repository": "gideon930-linux/homelab-cyber-range",
   "unrecognized_hosts": [
     "192.168.3.1",
