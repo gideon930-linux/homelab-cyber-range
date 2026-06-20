@@ -32,15 +32,6 @@ I use this environment to practice ethical hacking and blue-team defense:
 
 All testing is performed only on systems I own or have explicit permission to test.
 
-### Reconnaissance and Enumeration Labs
-
-These notes document introductory reconnaissance work performed against services exposed through the lab firewall for learning and documentation purposes.
-
-- **Nmap port scanning notes:** [`docs/nmap-port-scanning.md`](docs/nmap-port-scanning.md)
-- `docs/nmap-port-scanning.md` – Session 1: Host discovery + basic ports
-- `docs/nmap-port-scanning2.md` – Session 2: Full-port, -sV, -A, timing
-- **dig DNS enumeration notes:** [`docs/dig-dns-enumeration.md`](docs/dig-dns-enumeration.md)
-
 ### External access through OPNsense
 
 To simulate a more realistic attack path from my main PC, I configured OPNsense WAN rules and Destination NAT to expose selected lab services safely to the lab edge.
