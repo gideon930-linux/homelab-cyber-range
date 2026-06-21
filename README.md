@@ -111,12 +111,12 @@ The scanner separates two kinds of targets so each gets the right tooling:
 
 Keep URLs out of `target.txt` and IPs/CIDRs out of `web-targets.txt`. If `web-targets.txt` is absent (or `WEB_TARGET_FILE` points nowhere), web checks are skipped and the host scan is unaffected.
 
-### Summer 2026 Learning Projects
+### Summer 2026 Learning Docs
 
-These projects run on this homelab but are documented in a separate portfolio repo:
+The detailed project notes live in a separate portfolio repo:
 
-- Port scanning against OPNsense WAN with Nmap – [Summer Hacking Projects: Project 01](https://github.com/gideon930-linux/summer-hacking-projects/blob/main/01-port-scanning-with-nmap.md)
-- DNS enumeration from Kali using dig – [Summer Hacking Projects: Project 02](https://github.com/gideon930-linux/summer-hacking-projects/blob/main/02-dns-enumeration.md)
+- Nmap scanning labs – see `summer-hacking-projects/docs/nmap-port-scanning*.md`
+- DNS enumeration labs – see `summer-hacking-projects/docs/dig-dns-enumeration.md`
   
 #### How web checks run
 
