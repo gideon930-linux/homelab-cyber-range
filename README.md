@@ -8,7 +8,7 @@ This repository documents my personal cybersecurity lab built on Proxmox, OPNsen
 - Run offensive security tools safely in an isolated lab
 - Build blue-team skills with logging, monitoring, and hardening
 
-## Lab components
+## Lab components   
 
 - Proxmox host running multiple VMs
 - OPNsense firewall (bare metal and internal lab firewall)
