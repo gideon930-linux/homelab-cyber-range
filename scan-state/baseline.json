@@ -4,8 +4,10 @@
       "addresses": [
         "192.168.3.60"
       ],
-      "hostnames": [],
-      "mac": "BC:24:11:16:E3:04",
+      "hostnames": [
+        "joker930.local"
+      ],
+      "mac": null,
       "os_matches": [],
       "ports": [
         {
@@ -17,8 +19,8 @@
           "version": "10.2p1 Ubuntu 2ubuntu3.2"
         }
       ],
-      "vendor": "Proxmox Server Solutions GmbH"
+      "vendor": null
     }
   },
-  "last_updated_utc": "2026-06-20T01:59:36Z"
+  "last_updated_utc": "2026-06-22T15:49:01Z"
 }
