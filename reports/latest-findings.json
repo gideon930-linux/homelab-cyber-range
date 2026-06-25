@@ -1,8 +1,8 @@
 {
   "closed_ports": [],
-  "generated_at_utc": "2026-06-22T15:49:01Z",
-  "github_run_id": "27965406175",
-  "host_count": 1,
+  "generated_at_utc": "2026-06-25T17:27:10Z",
+  "github_run_id": "28172682871",
+  "host_count": 0,
   "nessus_findings": [],
   "new_hosts": [],
   "new_ports": [],
@@ -10,56 +10,56 @@
   "unrecognized_hosts": [
     "192.168.2.1",
     "192.168.2.100",
-    "192.168.2.101",
     "192.168.2.109",
     "192.168.2.110",
     "192.168.2.111",
     "192.168.2.117",
+    "192.168.2.121",
     "192.168.2.122",
     "192.168.2.126",
     "192.168.2.127",
-    "192.168.2.178",
-    "192.168.2.192",
+    "192.168.2.138",
+    "192.168.2.144",
+    "192.168.2.167",
     "192.168.2.50",
     "192.168.2.53",
     "192.168.2.90",
     "192.168.3.1",
     "192.168.3.149",
-    "192.168.3.189",
-    "192.168.3.53"
+    "192.168.3.70"
   ],
   "web_enabled": true,
   "web_targets": [
     {
-      "artifact": "reports/web-20260622T154901Z/1-Juice_Shop.nmap-http.txt",
-      "http_code": "200",
+      "artifact": "reports/web-20260625T172710Z/1-Juice_Shop.whatweb.txt;reports/web-20260625T172710Z/1-Juice_Shop.nikto.txt;reports/web-20260625T172710Z/1-Juice_Shop.nmap-http.txt",
+      "http_code": "000",
       "label": "Juice Shop",
       "status": "completed",
-      "tool": "nmap-http",
+      "tool": "whatweb+nikto+nmap-http",
       "url": "http://192.168.3.53:3000"
     },
     {
-      "artifact": "reports/web-20260622T154901Z/2-WebGoat.nmap-http.txt",
+      "artifact": "reports/web-20260625T172710Z/2-WebGoat.whatweb.txt;reports/web-20260625T172710Z/2-WebGoat.nikto.txt;reports/web-20260625T172710Z/2-WebGoat.nmap-http.txt",
       "http_code": "000",
       "label": "WebGoat",
       "status": "completed",
-      "tool": "nmap-http",
+      "tool": "whatweb+nikto+nmap-http",
       "url": "http://192.168.2.53:8082/WebGoat/login"
     },
     {
-      "artifact": "reports/web-20260622T154901Z/3-DVWA.nmap-http.txt",
-      "http_code": "200",
+      "artifact": "reports/web-20260625T172710Z/3-DVWA.whatweb.txt;reports/web-20260625T172710Z/3-DVWA.nikto.txt;reports/web-20260625T172710Z/3-DVWA.nmap-http.txt",
+      "http_code": "000",
       "label": "DVWA",
       "status": "completed",
-      "tool": "nmap-http",
+      "tool": "whatweb+nikto+nmap-http",
       "url": "http://192.168.3.53:8081/login.php"
     },
     {
-      "artifact": "reports/web-20260622T154901Z/4-Proxmox.nmap-http.txt",
+      "artifact": "reports/web-20260625T172710Z/4-Proxmox.whatweb.txt;reports/web-20260625T172710Z/4-Proxmox.nikto.txt;reports/web-20260625T172710Z/4-Proxmox.nmap-http.txt",
       "http_code": "301",
       "label": "Proxmox",
       "status": "completed",
-      "tool": "nmap-http",
+      "tool": "whatweb+nikto+nmap-http",
       "url": "http://192.168.2.53:8006"
     }
   ]

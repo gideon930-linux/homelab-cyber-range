@@ -1,26 +1,4 @@
 {
-  "hosts": {
-    "192.168.3.60": {
-      "addresses": [
-        "192.168.3.60"
-      ],
-      "hostnames": [
-        "joker930.local"
-      ],
-      "mac": null,
-      "os_matches": [],
-      "ports": [
-        {
-          "extrainfo": "Ubuntu Linux; protocol 2.0",
-          "port": 22,
-          "product": "OpenSSH",
-          "protocol": "tcp",
-          "service": "ssh",
-          "version": "10.2p1 Ubuntu 2ubuntu3.2"
-        }
-      ],
-      "vendor": null
-    }
-  },
-  "last_updated_utc": "2026-06-22T15:49:01Z"
+  "hosts": {},
+  "last_updated_utc": "2026-06-25T17:27:10Z"
 }
