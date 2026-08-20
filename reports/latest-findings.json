@@ -1,7 +1,7 @@
 {
   "closed_ports": [],
-  "generated_at_utc": "2026-08-19T11:19:26Z",
-  "github_run_id": "32246998828",
+  "generated_at_utc": "2026-08-20T11:20:52Z",
+  "github_run_id": "32363352109",
   "host_count": 0,
   "nessus_findings": [],
   "new_hosts": [],
@@ -19,7 +19,6 @@
     "192.168.2.121",
     "192.168.2.126",
     "192.168.2.127",
-    "192.168.2.167",
     "192.168.2.168",
     "192.168.2.200",
     "192.168.2.50",
@@ -30,7 +29,7 @@
   "web_enabled": true,
   "web_targets": [
     {
-      "artifact": "reports/web-20260819T111926Z/1-Juice_Shop.whatweb.txt;reports/web-20260819T111926Z/1-Juice_Shop.nikto.txt;reports/web-20260819T111926Z/1-Juice_Shop.nmap-http.txt",
+      "artifact": "reports/web-20260820T112052Z/1-Juice_Shop.whatweb.txt;reports/web-20260820T112052Z/1-Juice_Shop.nikto.txt;reports/web-20260820T112052Z/1-Juice_Shop.nmap-http.txt",
       "http_code": "000",
       "label": "Juice Shop",
       "status": "completed",
@@ -38,7 +37,7 @@
       "url": "http://192.168.3.53:3000"
     },
     {
-      "artifact": "reports/web-20260819T111926Z/2-WebGoat.whatweb.txt;reports/web-20260819T111926Z/2-WebGoat.nikto.txt;reports/web-20260819T111926Z/2-WebGoat.nmap-http.txt",
+      "artifact": "reports/web-20260820T112052Z/2-WebGoat.whatweb.txt;reports/web-20260820T112052Z/2-WebGoat.nikto.txt;reports/web-20260820T112052Z/2-WebGoat.nmap-http.txt",
       "http_code": "000",
       "label": "WebGoat",
       "status": "completed",
@@ -46,7 +45,7 @@
       "url": "http://192.168.2.53:8082/WebGoat/login"
     },
     {
-      "artifact": "reports/web-20260819T111926Z/3-DVWA.whatweb.txt;reports/web-20260819T111926Z/3-DVWA.nikto.txt;reports/web-20260819T111926Z/3-DVWA.nmap-http.txt",
+      "artifact": "reports/web-20260820T112052Z/3-DVWA.whatweb.txt;reports/web-20260820T112052Z/3-DVWA.nikto.txt;reports/web-20260820T112052Z/3-DVWA.nmap-http.txt",
       "http_code": "000",
       "label": "DVWA",
       "status": "completed",
@@ -54,7 +53,7 @@
       "url": "http://192.168.3.53:8081/login.php"
     },
     {
-      "artifact": "reports/web-20260819T111926Z/4-Proxmox.whatweb.txt;reports/web-20260819T111926Z/4-Proxmox.nikto.txt;reports/web-20260819T111926Z/4-Proxmox.nmap-http.txt",
+      "artifact": "reports/web-20260820T112052Z/4-Proxmox.whatweb.txt;reports/web-20260820T112052Z/4-Proxmox.nikto.txt;reports/web-20260820T112052Z/4-Proxmox.nmap-http.txt",
       "http_code": "301",
       "label": "Proxmox",
       "status": "completed",
