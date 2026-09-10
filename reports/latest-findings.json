@@ -1,33 +1,18 @@
 {
   "closed_ports": [],
-  "generated_at_utc": "2026-09-09T22:42:15Z",
-  "github_run_id": "34367195090",
-  "host_count": 1,
+  "generated_at_utc": "2026-09-10T14:43:48Z",
+  "github_run_id": "34490956239",
+  "host_count": 0,
   "nessus_findings": [],
-  "new_hosts": [
-    "192.168.3.174"
-  ],
-  "new_ports": [
-    {
-      "details": {
-        "extrainfo": "",
-        "port": 3389,
-        "product": "",
-        "protocol": "tcp",
-        "service": "ms-wbt-server",
-        "version": ""
-      },
-      "host": "192.168.3.174",
-      "port": "tcp/3389"
-    }
-  ],
+  "new_hosts": [],
+  "new_ports": [],
   "repository": "gideon930-linux/homelab-cyber-range",
   "unrecognized_hosts": [
     "192.168.2.1",
     "192.168.2.100",
+    "192.168.2.117",
     "192.168.2.119",
     "192.168.2.121",
-    "192.168.2.122",
     "192.168.2.126",
     "192.168.2.131",
     "192.168.2.156",
@@ -35,8 +20,6 @@
     "192.168.2.167",
     "192.168.2.20",
     "192.168.2.21",
-    "192.168.2.31",
-    "192.168.2.46",
     "192.168.2.50",
     "192.168.2.53",
     "192.168.2.69",
@@ -50,7 +33,7 @@
   "web_enabled": true,
   "web_targets": [
     {
-      "artifact": "reports/web-20260909T224215Z/1-Juice_Shop.whatweb.txt;reports/web-20260909T224215Z/1-Juice_Shop.nikto.txt;reports/web-20260909T224215Z/1-Juice_Shop.nmap-http.txt",
+      "artifact": "reports/web-20260910T144348Z/1-Juice_Shop.whatweb.txt;reports/web-20260910T144348Z/1-Juice_Shop.nikto.txt;reports/web-20260910T144348Z/1-Juice_Shop.nmap-http.txt",
       "http_code": "000",
       "label": "Juice Shop",
       "status": "completed",
@@ -58,7 +41,7 @@
       "url": "http://192.168.3.53:3000"
     },
     {
-      "artifact": "reports/web-20260909T224215Z/2-WebGoat.whatweb.txt;reports/web-20260909T224215Z/2-WebGoat.nikto.txt;reports/web-20260909T224215Z/2-WebGoat.nmap-http.txt",
+      "artifact": "reports/web-20260910T144348Z/2-WebGoat.whatweb.txt;reports/web-20260910T144348Z/2-WebGoat.nikto.txt;reports/web-20260910T144348Z/2-WebGoat.nmap-http.txt",
       "http_code": "000",
       "label": "WebGoat",
       "status": "completed",
@@ -66,7 +49,7 @@
       "url": "http://192.168.2.53:8082/WebGoat/login"
     },
     {
-      "artifact": "reports/web-20260909T224215Z/3-DVWA.whatweb.txt;reports/web-20260909T224215Z/3-DVWA.nikto.txt;reports/web-20260909T224215Z/3-DVWA.nmap-http.txt",
+      "artifact": "reports/web-20260910T144348Z/3-DVWA.whatweb.txt;reports/web-20260910T144348Z/3-DVWA.nikto.txt;reports/web-20260910T144348Z/3-DVWA.nmap-http.txt",
       "http_code": "000",
       "label": "DVWA",
       "status": "completed",
@@ -74,7 +57,7 @@
       "url": "http://192.168.3.53:8081/login.php"
     },
     {
-      "artifact": "reports/web-20260909T224215Z/4-Proxmox.whatweb.txt;reports/web-20260909T224215Z/4-Proxmox.nikto.txt;reports/web-20260909T224215Z/4-Proxmox.nmap-http.txt",
+      "artifact": "reports/web-20260910T144348Z/4-Proxmox.whatweb.txt;reports/web-20260910T144348Z/4-Proxmox.nikto.txt;reports/web-20260910T144348Z/4-Proxmox.nmap-http.txt",
       "http_code": "301",
       "label": "Proxmox",
       "status": "completed",

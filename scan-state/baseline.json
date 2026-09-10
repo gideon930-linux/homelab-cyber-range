@@ -1,24 +1,4 @@
 {
-  "hosts": {
-    "192.168.3.174": {
-      "addresses": [
-        "192.168.3.174"
-      ],
-      "hostnames": [],
-      "mac": "BC:24:11:A2:18:EC",
-      "os_matches": [],
-      "ports": [
-        {
-          "extrainfo": "",
-          "port": 3389,
-          "product": "",
-          "protocol": "tcp",
-          "service": "ms-wbt-server",
-          "version": ""
-        }
-      ],
-      "vendor": "Proxmox Server Solutions GmbH"
-    }
-  },
-  "last_updated_utc": "2026-09-09T22:42:15Z"
+  "hosts": {},
+  "last_updated_utc": "2026-09-10T14:43:48Z"
 }
