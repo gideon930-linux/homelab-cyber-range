@@ -33,6 +33,9 @@ web_output_dir="$REPORT_DIR/web-$stamp"
 report_md="$REPORT_DIR/vulnerability-report-$stamp.md"
 latest_report="$REPORT_DIR/latest-vulnerability-report.md"
 latest_findings="$REPORT_DIR/latest-findings.json"
+wiki_changes_md="$REPORT_DIR/wiki-changes-$stamp.md"
+latest_wiki_changes="$REPORT_DIR/latest-wiki-changes.md"
+report_date="$(date -u +"%Y-%m-%d")"
 
 log() {
   printf '[%s] %s\n' "$SCRIPT_NAME" "$*" >&2
@@ -357,7 +360,7 @@ else
 fi
 
 log "Creating diffed findings and Markdown report"
-python3 - "$nmap_json" "$nessus_json" "$BASELINE_FILE" "$discovered_json" "$TARGET_FILE" "$finding_json" "$report_md" "$timestamp_utc" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$web_json" <<'PY'
+python3 - "$nmap_json" "$nessus_json" "$BASELINE_FILE" "$discovered_json" "$TARGET_FILE" "$finding_json" "$report_md" "$timestamp_utc" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$web_json" "$wiki_changes_md" "$report_date" <<'PY'
 import ipaddress
 import json
 import sys
@@ -375,6 +378,8 @@ from pathlib import Path
     github_repository,
     github_run_id,
     web_json,
+    wiki_changes_md,
+    report_date,
 ) = sys.argv[1:]
 
 def load_json(path, default):
@@ -449,6 +454,19 @@ unrecognized_hosts = sorted(
     if host not in current_hosts and not is_expected_host(host, targets)
 )
 
+# Per-host open-port count changes (covers hosts present in either snapshot).
+port_count_changes = []
+for host in sorted(set(current_hosts) | set(baseline_hosts)):
+    current_count = len(current_hosts.get(host, {}).get("ports", []))
+    baseline_count = len(baseline_hosts.get(host, {}).get("ports", []))
+    if current_count != baseline_count:
+        port_count_changes.append({
+            "host": host,
+            "previous_open_ports": baseline_count,
+            "current_open_ports": current_count,
+            "delta": current_count - baseline_count,
+        })
+
 nessus_findings = []
 if not nessus.get("skipped"):
     for vuln in nessus.get("vulnerabilities", []):
@@ -463,6 +481,14 @@ if not nessus.get("skipped"):
                 "vpr_score": vuln.get("vpr_score"),
             })
 
+# Is this the very first run (no prior baseline)? Treat it as a baseline
+# establishment rather than a flood of "new" changes in the wiki report.
+baseline_established = bool(baseline_hosts)
+
+changes_detected = bool(
+    new_ports or closed_ports or port_count_changes or unrecognized_hosts
+)
+
 summary = {
     "generated_at_utc": timestamp_utc,
     "repository": github_repository,
@@ -471,10 +497,13 @@ summary = {
     "unrecognized_hosts": unrecognized_hosts,
     "new_ports": new_ports,
     "closed_ports": closed_ports,
+    "port_count_changes": port_count_changes,
     "nessus_findings": nessus_findings,
     "host_count": len(current_hosts),
     "web_targets": web_results,
     "web_enabled": bool(web_data.get("enabled")) if isinstance(web_data, dict) else False,
+    "changes_detected": changes_detected,
+    "baseline_established": baseline_established,
 }
 
 with Path(finding_json).open("w", encoding="utf-8") as f:
@@ -616,10 +645,92 @@ lines.append("- [ ] Update `target.txt` and commit baseline changes after valida
 lines.append("")
 
 Path(report_md).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+# --- Concise, changes-only report for the repository wiki -------------------
+# This is intentionally short: it surfaces ONLY deltas (open-port count
+# changes, newly opened / closed ports, and unrecognized hosts). When nothing
+# changed, it says so in a single line instead of dumping the full inventory.
+wlines = []
+wlines.append(f"# Homelab Scan Changes — {report_date}")
+wlines.append("")
+wlines.append(f"- **Generated UTC:** {timestamp_utc}")
+wlines.append(f"- **Repository:** `{github_repository}`")
+wlines.append(f"- **GitHub run ID:** `{github_run_id}`")
+wlines.append(f"- **Hosts scanned:** {len(current_hosts)}")
+wlines.append("")
+
+if not baseline_established:
+    wlines.append("> First recorded scan — establishing the baseline. "
+                  "No prior data to compare against; future runs report only changes.")
+    wlines.append("")
+elif not changes_detected:
+    wlines.append("**No changes detected.** Open port counts match the previous baseline "
+                  "and no unrecognized hosts were found.")
+    wlines.append("")
+else:
+    wlines.append("## Open Port Count Changes")
+    wlines.append("")
+    if port_count_changes:
+        wlines.append("| Host | Previous | Current | Change |")
+        wlines.append("|---|---:|---:|---:|")
+        for item in port_count_changes:
+            delta = item["delta"]
+            arrow = "+" if delta > 0 else ""
+            wlines.append(
+                f"| {md_escape(item['host'])} | {item['previous_open_ports']} | "
+                f"{item['current_open_ports']} | {arrow}{delta} |"
+            )
+    else:
+        wlines.append("- No per-host open port count changes.")
+    wlines.append("")
+
+    wlines.append("## Newly Opened Ports")
+    wlines.append("")
+    if new_ports:
+        wlines.append("| Host | Port | Service | Product | Version |")
+        wlines.append("|---|---:|---|---|---|")
+        for item in new_ports:
+            d = item["details"]
+            wlines.append(
+                f"| {md_escape(item['host'])} | {md_escape(item['port'])} | "
+                f"{md_escape(d.get('service') or 'unknown')} | {md_escape(d.get('product') or '')} | "
+                f"{md_escape(d.get('version') or '')} |"
+            )
+    else:
+        wlines.append("- None")
+    wlines.append("")
+
+    wlines.append("## Closed Ports")
+    wlines.append("")
+    if closed_ports:
+        for item in closed_ports:
+            wlines.append(f"- **{md_escape(item['host'])}**: `{md_escape(item['port'])}` no longer open")
+    else:
+        wlines.append("- None")
+    wlines.append("")
+
+    wlines.append("## Unauthorized / Unrecognized Hosts")
+    wlines.append("")
+    if unrecognized_hosts:
+        wlines.append("Live hosts found in `DISCOVERY_CIDRS` that are not listed in `target.txt`:")
+        wlines.append("")
+        for host in unrecognized_hosts:
+            wlines.append(f"- **{md_escape(host)}** — needs owner / purpose / approval")
+    else:
+        wlines.append("- None")
+    wlines.append("")
+
+run_url = f"https://github.com/{github_repository}/actions/runs/{github_run_id}"
+wlines.append("---")
+wlines.append(f"_Full report and artifacts: [workflow run {github_run_id}]({run_url})._")
+wlines.append("")
+
+Path(wiki_changes_md).write_text("\n".join(wlines) + "\n", encoding="utf-8")
 PY
 
 cp "$report_md" "$latest_report"
 cp "$finding_json" "$latest_findings"
+cp "$wiki_changes_md" "$latest_wiki_changes"
 
 log "Updating baseline file"
 python3 - "$nmap_json" "$BASELINE_FILE" "$timestamp_utc" <<'PY'
@@ -636,4 +747,5 @@ PY
 
 log "Report written to $report_md"
 log "Latest report copied to $latest_report"
+log "Changes-only wiki report written to $wiki_changes_md"
 
